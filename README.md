@@ -13,6 +13,7 @@
 
 redis
 util
+husky ※ husky は、GitHub のプラグインです。v7.0.0 では、husky-git-hooks が必要です。
 
 ---
 
