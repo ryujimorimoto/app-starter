@@ -8,6 +8,7 @@ import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
 import setStoreAccount from "./lib/dynamoDB/setStoreAccount";
+import appRouter from "./router";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -91,6 +92,7 @@ app.prepare().then(async () => {
 
   router.get("(/_next/static/.*)", handleRequest); // Static content is clear
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
+  appRouter(router);
   router.get("(.*)", async (ctx) => {
     const shop = ctx.query.shop;
     console.log("accessToken: ", await Shopify.Utils.loadOfflineSession(shop));
