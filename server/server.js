@@ -7,6 +7,7 @@ import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from 
 import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
+import setStoreAccount from "./lib/dynamoDB/setStoreAccount";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -32,10 +33,11 @@ const ACTIVE_SHOPIFY_SHOPS = {};
 app.prepare().then(async () => {
   const server = new Koa();
   const router = new Router();
+  const accessMode = "offline";
   server.keys = [Shopify.Context.API_SECRET_KEY];
   server.use(
     createShopifyAuth({
-      accessMode: "offline",
+      accessMode,
       async afterAuth(ctx) {
         const { shop, accessToken, scope } = ctx.state.shopify;
         const host = ctx.query.host;
@@ -53,6 +55,12 @@ app.prepare().then(async () => {
           console.log(
             `Failed to register APP_UNINSTALLED webhook: ${response.result}`
           );
+        }else{
+          try {
+            await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode});
+          } catch (error) {
+            console.error(error);
+          }
         }
         ctx.redirect(`/?shop=${shop}&host=${host}`);
       },
