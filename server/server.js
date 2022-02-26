@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import "isomorphic-fetch";
 import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
 import Shopify, { ApiVersion } from "@shopify/shopify-api";
+import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from './redis-store';
 import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
@@ -14,30 +15,28 @@ const app = next({
   dev,
 });
 const handle = app.getRequestHandler();
-
 Shopify.Context.initialize({
   API_KEY: process.env.SHOPIFY_API_KEY,
   API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
   SCOPES: process.env.SCOPES.split(","),
   HOST_NAME: process.env.HOST.replace(/https:\/\/|\/$/g, ""),
-  API_VERSION: ApiVersion.October20,
+  API_VERSION: ApiVersion.October21,
   IS_EMBEDDED_APP: true,
-  // This should be replaced with your preferred storage strategy
-  SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
+  SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(
+    sessionStoreCallback,
+    sessionLoadCallback,
+    sessionDeleteCallback,
+  ),
 });
-
-// Storing the currently active shops in memory will force them to re-login when your server restarts. You should
-// persist this object in your app.
 const ACTIVE_SHOPIFY_SHOPS = {};
-
 app.prepare().then(async () => {
   const server = new Koa();
   const router = new Router();
   server.keys = [Shopify.Context.API_SECRET_KEY];
   server.use(
     createShopifyAuth({
+      accessMode: "offline",
       async afterAuth(ctx) {
-        // Access token and shop available in ctx.state.shopify
         const { shop, accessToken, scope } = ctx.state.shopify;
         const host = ctx.query.host;
         ACTIVE_SHOPIFY_SHOPS[shop] = scope;
@@ -50,14 +49,11 @@ app.prepare().then(async () => {
           webhookHandler: async (topic, shop, body) =>
             delete ACTIVE_SHOPIFY_SHOPS[shop],
         });
-
         if (!response.success) {
           console.log(
             `Failed to register APP_UNINSTALLED webhook: ${response.result}`
           );
         }
-
-        // Redirect to app with shop parameter upon auth
         ctx.redirect(`/?shop=${shop}&host=${host}`);
       },
     })
@@ -68,7 +64,6 @@ app.prepare().then(async () => {
     ctx.respond = false;
     ctx.res.statusCode = 200;
   };
-
   router.post("/webhooks", async (ctx) => {
     try {
       await Shopify.Webhooks.Registry.process(ctx.req, ctx.res);
@@ -90,8 +85,7 @@ app.prepare().then(async () => {
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
   router.get("(.*)", async (ctx) => {
     const shop = ctx.query.shop;
-
-    // This shop hasn't been seen yet, go through OAuth to create a session
+    console.log("accessToken: ", await Shopify.Utils.loadOfflineSession(shop));
     if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
       ctx.redirect(`/auth?shop=${shop}`);
     } else {

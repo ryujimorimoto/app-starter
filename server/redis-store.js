@@ -1,16 +1,12 @@
 import {Session} from '@shopify/shopify-api/dist/auth/session';
-import redis from 'redis';
+import {createClient} from 'redis';
 import {promisify} from 'util';
+const client = createClient();
 
-let client = redis.createClient();
-
-client.on('connect', function() {
-  console.log('Redisに接続しました');
-});
-
-client.on('error', function (err) {
-  console.log('エラーが発生しました：' + err);
-});
+(async () => {
+  client.on('error', err => console.log('エラーが発生しました：' + err));
+  await client.connect();
+})();
 export const sessionStoreCallback = async (session = Session) => {
   try {
     const setAsync = await promisify(client.set).bind(client);
