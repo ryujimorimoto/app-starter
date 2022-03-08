@@ -7,7 +7,7 @@ import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from 
 import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
-import setStoreAccount from "./lib/dynamoDB/setStoreAccount";
+import setStoreAccount from "./api/set-store-account";
 import appRouter from "./router";
 
 dotenv.config();
@@ -60,7 +60,7 @@ app.prepare().then(async () => {
           try {
             await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode});
           } catch (error) {
-            console.error(error);
+            console.error("[Error] setStoreAccount:", error);
           }
         }
         ctx.redirect(`/?shop=${shop}&host=${host}`);

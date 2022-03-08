@@ -1,5 +1,4 @@
-import { docClient } from "../aws-config";
-import putData from "./putData";
+import putData from "../lib/dynamoDB/put-data";
 
 export default async function setStoreAccount(TableName, Item) {
   const result = await putData(TableName, Item);
