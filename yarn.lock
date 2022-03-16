@@ -1246,6 +1246,13 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
+"@koa/cors@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@koa/cors/-/cors-3.2.0.tgz#7fb65fbeb7dd841c3edf645efbfa2524dc72916a"
+  integrity sha512-bMjKGAJW2lg2jm7StqedeL/TMra0zl5VMtRyzl+WKbopj3AZEvy+FE8zeWvl1x3pofuU4a7ICuwIK/nr5/PEHg==
+  dependencies:
+    vary "^1.1.2"
+
 "@next/env@12.1.0":
   version "12.1.0"
   resolved "https://registry.yarnpkg.com/@next/env/-/env-12.1.0.tgz#73713399399b34aa5a01771fb73272b55b22c314"
@@ -1395,13 +1402,13 @@
   dependencies:
     base64url "^3.0.1"
 
-"@shopify/koa-shopify-auth@^4.1.2":
-  version "4.1.5"
-  resolved "https://registry.yarnpkg.com/@shopify/koa-shopify-auth/-/koa-shopify-auth-4.1.5.tgz#bd4a80b749923399795e3bd106319bffe3f5a9ba"
-  integrity sha512-JxJmi/oaowTavNPq/2dinWHMYGEAbj8+h5+XMtmOt+ZbVFh5eAzodbcWdl/Nz89+cKxRPVToeHLTZcXnWZ4ziw==
+"@shopify/koa-shopify-auth@^5.0.3":
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/@shopify/koa-shopify-auth/-/koa-shopify-auth-5.0.3.tgz#54ebea4613dd5661cc3d9e7b12e9c0252e7272c3"
+  integrity sha512-dhe7mI1UXSYPRc8gMfSLjcvMCqne2UMfAY7XZZoyVPtRysrDLgIN8N0ZfdL9QGJ7ed5v1nAdGM+Q095JYCZVJg==
   dependencies:
     "@shopify/network" "^1.5.0"
-    "@shopify/shopify-api" "^1.2.1"
+    "@shopify/shopify-api" "^2.1.0"
     koa-compose ">=3.0.0 <4.0.0"
     nonce "^1.0.4"
     tslib "^1.9.3"
@@ -1429,10 +1436,10 @@
     lodash "^4.17.4"
     react-transition-group "^4.4.2"
 
-"@shopify/shopify-api@^1.2.1":
-  version "1.4.3"
-  resolved "https://registry.yarnpkg.com/@shopify/shopify-api/-/shopify-api-1.4.3.tgz#b2398117bc6e59e0d59e410ebba5272795c5f2e8"
-  integrity sha512-X2/sXW0SQKeT8XSGNiJKRnIBPAbjR1dmyi4XgnARyyXI2LgE8Lm15Jh/JRmb4Gm+BZ/SuOnjDlDw2g6Y3MEtDw==
+"@shopify/shopify-api@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@shopify/shopify-api/-/shopify-api-2.1.0.tgz#750519188cf4cad8c65170ed05e4bd4aa65a5285"
+  integrity sha512-CI+CUc0b2+Iv4AFhKaIAvMpbTddyTIKM3O2Qk0wS1gcj5nRdSFg6JbeVThNOYYu/7rzf93J8qYF1E4OZl920CQ==
   dependencies:
     "@shopify/network" "^1.5.1"
     "@types/jsonwebtoken" "^8.5.0"

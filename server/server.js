@@ -36,6 +36,7 @@ app.prepare().then(async () => {
   const router = new Router();
   const accessMode = "offline";
   server.keys = [Shopify.Context.API_SECRET_KEY];
+  server.use(cors());
   server.use(
     createShopifyAuth({
       accessMode,
