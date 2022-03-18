@@ -1,6 +1,5 @@
 import {Session} from '@shopify/shopify-api/dist/auth/session';
 import {createClient} from 'redis';
-import {promisify} from 'util';
 const client = createClient();
 
 (async () => {
@@ -9,8 +8,7 @@ const client = createClient();
 })();
 export const sessionStoreCallback = async (session = Session) => {
   try {
-    const setAsync = await promisify(client.set).bind(client);
-    return await setAsync(session.id , JSON.stringify(session));
+    return await client.set(session.id , JSON.stringify(session));
   } catch (err) {
     throw new Error(err);
   }
@@ -18,8 +16,7 @@ export const sessionStoreCallback = async (session = Session) => {
 
 export const sessionLoadCallback = async (id) => {
   try {
-    const getAsync = await promisify(client.get).bind(client);
-    let reply = await getAsync(id);
+    let reply = await client.get(id);
     if (reply) {
       return JSON.parse(reply);
     } else {
@@ -32,8 +29,7 @@ export const sessionLoadCallback = async (id) => {
 
 export const sessionDeleteCallback = async (id) => {
   try {
-    const delAsync = await promisify(client.del).bind(client);
-    return await delAsync(id);
+    return await client.del(id);
   } catch (err) {
     throw new Error(err);
   }
