@@ -9,6 +9,7 @@ import next from "next";
 import Router from "koa-router";
 import setStoreAccount from "./api/set-store-account";
 import appRouter from "./router";
+import deleteStoreAccounts from "./lib/dynamoDB/delete-store-account";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -53,7 +54,7 @@ app.prepare().then(async () => {
           webhookHandler: async (topic, shop, body) =>
             delete ACTIVE_SHOPIFY_SHOPS[shop],
         });
-        if (!response.success) {
+        if (!response["APP_UNINSTALLED"].success) {
           console.log(
             `Failed to register APP_UNINSTALLED webhook: ${response.result}`
           );
@@ -76,11 +77,19 @@ app.prepare().then(async () => {
   };
   router.post("/webhooks", async (ctx) => {
     try {
+      const shop = ctx.request?.header["x-shopify-shop-domain"];
+      console.log("shop:", shop);
+      await deleteStoreAccounts(process.env.STORE_ACCOUNT_TABLENAME, shop);
+      delete ACTIVE_SHOPIFY_SHOPS[shop];
       await Shopify.Webhooks.Registry.process(ctx.req, ctx.res);
+      ctx.status = 200;
+      ctx.body = "ok";
       console.log(`Webhook processed, returned status code 200`);
     } catch (error) {
       console.log(`Failed to process webhook: ${error}`);
+      ctx.body = error;
     }
+    return null;
   });
 
   router.post(
