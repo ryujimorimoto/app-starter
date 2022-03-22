@@ -10,6 +10,7 @@ import Router from "koa-router";
 import setStoreAccount from "./api/set-store-account";
 import appRouter from "./router";
 import deleteStoreAccounts from "./lib/dynamoDB/delete-store-account";
+import getStoreAccount from "./lib/dynamoDB/get-store-account";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -23,7 +24,7 @@ Shopify.Context.initialize({
   API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
   SCOPES: process.env.SCOPES.split(","),
   HOST_NAME: process.env.HOST.replace(/https:\/\/|\/$/g, ""),
-  API_VERSION: ApiVersion.October21,
+  API_VERSION: process.env.SHOPIFY_API_VERSION,
   IS_EMBEDDED_APP: true,
   SESSION_STORAGE: new Shopify.Session.CustomSessionStorage(
     sessionStoreCallback,
@@ -54,16 +55,15 @@ app.prepare().then(async () => {
           webhookHandler: async (topic, shop, body) =>
             delete ACTIVE_SHOPIFY_SHOPS[shop],
         });
-        if (!response["APP_UNINSTALLED"].success) {
+        if (!response["APP_UNINSTALLED"]?.success) {
           console.log(
-            `Failed to register APP_UNINSTALLED webhook: ${response.result}`
+            `Failed to register APP_UNINSTALLED webhook: ${JSON.stringify(response)}`
           );
-        }else{
-          try {
-            await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode});
-          } catch (error) {
-            console.error("[Error] setStoreAccount:", error);
-          }
+        }
+        try {
+          await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode});
+        } catch (error) {
+          console.error("[Error] setStoreAccount:", error);
         }
         ctx.redirect(`/?shop=${shop}&host=${host}`);
       },
@@ -107,7 +107,14 @@ app.prepare().then(async () => {
     const shop = ctx.query.shop;
     console.log("accessToken: ", await Shopify.Utils.loadOfflineSession(shop));
     if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
-      ctx.redirect(`/auth?shop=${shop}`);
+      // グローバル変数に値がない場合、DBを参照しにいく
+      const storeData = await getStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, shop);
+      if (storeData) {
+        ACTIVE_SHOPIFY_SHOPS[shop] = storeData.scope;
+        await handleRequest(ctx);
+      }else{
+        ctx.redirect(`/auth?shop=${shop}`);
+      }
     } else {
       await handleRequest(ctx);
     }

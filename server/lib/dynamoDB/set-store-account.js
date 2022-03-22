@@ -1,4 +1,3 @@
-import { docClient } from "../aws-config";
 import putData from "./put-data";
 
 export default async function setStoreAccount(TableName, Item) {
