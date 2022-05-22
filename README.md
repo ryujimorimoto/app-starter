@@ -33,6 +33,12 @@ axios
 - $ yarn install
 - github リポジトリの作成と、first commit の push
 
+## 注意事項
+
+webhook の受け取りは必ず認証を通すこと。（規約でそうなっている）
+この時、webhook の post を koaBody()で取得するとバグるので、
+koaBody()は使わないこと。
+
 ---
 
 インフラは AWS を想定。

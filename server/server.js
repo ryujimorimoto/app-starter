@@ -2,8 +2,9 @@ import "@babel/polyfill";
 import dotenv from "dotenv";
 import "isomorphic-fetch";
 import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
-import Shopify, { ApiVersion } from "@shopify/shopify-api";
-import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from './redis-store';
+import Shopify from "@shopify/shopify-api";
+import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from './session-store';
+// import {sessionStoreCallback , sessionLoadCallback, sessionDeleteCallback} from './redis-store';
 import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
@@ -11,6 +12,8 @@ import setStoreAccount from "./api/set-store-account";
 import appRouter from "./router";
 import deleteStoreAccounts from "./lib/dynamoDB/delete-store-account";
 import getStoreAccount from "./lib/dynamoDB/get-store-account";
+import verifyWebhook from "./lib/security/verifyWebhook";
+import processGDPR from "./lib/configs/process-GDPR";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -36,9 +39,13 @@ const ACTIVE_SHOPIFY_SHOPS = {};
 app.prepare().then(async () => {
   const server = new Koa();
   const router = new Router();
-  const accessMode = "offline";
   server.keys = [Shopify.Context.API_SECRET_KEY];
   server.use(cors());
+  server.use(async (ctx, next) => {
+    ctx.set("Content-Security-Policy", `frame-ancestors https://${ctx.state?.shopify?.shop || ctx.query?.shop} https://admin.shopify.com`);
+    await next();
+  });
+  const accessMode = "offline";
   server.use(
     createShopifyAuth({
       accessMode,
@@ -61,7 +68,7 @@ app.prepare().then(async () => {
           );
         }
         try {
-          await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode});
+          await setStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, {myshopifyDomain: shop, accessToken, scope, accessMode, host});
         } catch (error) {
           console.error("[Error] setStoreAccount:", error);
         }
@@ -77,11 +84,12 @@ app.prepare().then(async () => {
   };
   router.post("/webhooks", async (ctx) => {
     try {
+      await verifyWebhook(ctx);
       const shop = ctx.request?.header["x-shopify-shop-domain"];
       console.log("shop:", shop);
       await deleteStoreAccounts(process.env.STORE_ACCOUNT_TABLENAME, shop);
       delete ACTIVE_SHOPIFY_SHOPS[shop];
-      await Shopify.Webhooks.Registry.process(ctx.req, ctx.res);
+      // await Shopify.Webhooks.Registry.process(ctx.req, ctx.res);
       ctx.status = 200;
       ctx.body = "ok";
       console.log(`Webhook processed, returned status code 200`);
@@ -103,9 +111,11 @@ app.prepare().then(async () => {
   router.get("(/_next/static/.*)", handleRequest); // Static content is clear
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
   appRouter(router);
+  processGDPR(router);
+
   router.get("(.*)", async (ctx) => {
     const shop = ctx.query.shop;
-    console.log("accessToken: ", await Shopify.Utils.loadOfflineSession(shop));
+    // console.log("accessToken: ", await Shopify.Utils.loadOfflineSession(shop));
     if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
       // グローバル変数に値がない場合、DBを参照しにいく
       const storeData = await getStoreAccount(process.env.STORE_ACCOUNT_TABLENAME, shop);

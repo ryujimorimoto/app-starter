@@ -1,9 +1,8 @@
-import { docClient } from "../aws-config";
+import { docClient } from "../configs/aws-config";
 
-export default function putData(TableName, Item) {
+export default function putData({TableName, Item}) {
   return new Promise((resolve, reject) => {
-    const params = { TableName, Item };
-    docClient.put(params, (error, data) => {
+    docClient.put({ TableName, Item }, (error, data) => {
       if (error) {
         reject({error});
       } else {
